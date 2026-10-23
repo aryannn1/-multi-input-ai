@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { auth, googleProvider } from './firebase';
 import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import { Bot, Mail, Lock, Loader2, ArrowRight } from 'lucide-react';
+import { Bot, Mail, Lock, Loader2 } from 'lucide-react';
 
 // Matrix Rain Component
 const MatrixRain = () => {
