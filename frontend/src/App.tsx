@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, FileText, Bot, User, Loader2, Paperclip, X, Menu } from 'lucide-react';
+import { Send, FileText, Bot, User, Loader2, Paperclip, X, Menu, Sparkles, ChevronRight } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -11,7 +11,7 @@ type Message = {
 function App() {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'ai', text: 'Hello! I am your AI Research Assistant. Upload a PDF and ask me anything about it, or just ask a general question.' }
+    { role: 'ai', text: '### Welcome to AI Research Assistant ✨\n\nI am your intelligent research companion. Upload a PDF document to extract insights, or simply ask me anything from general knowledge to complex coding queries.' }
   ]);
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -45,11 +45,11 @@ function App() {
       if (data.error) throw new Error(data.error);
       
       setUploadedFiles(prev => [...prev, file.name]);
-      setMessages(prev => [...prev, { role: 'ai', text: `Document **"${file.name}"** successfully uploaded! You can now ask questions.` }]);
+      setMessages(prev => [...prev, { role: 'ai', text: `✅ Document **"${file.name}"** has been successfully analyzed. You may now ask questions related to its content.` }]);
       setIsMobileMenuOpen(false);
     } catch (error) {
       console.error(error);
-      setMessages(prev => [...prev, { role: 'ai', text: `Error uploading file.` }]);
+      setMessages(prev => [...prev, { role: 'ai', text: `❌ Error uploading file. Please ensure the backend is running.` }]);
     } finally {
       setIsUploading(false);
     }
@@ -96,99 +96,123 @@ function App() {
       }
     } catch (error) {
       console.error(error);
-      setMessages(prev => [...prev, { role: 'ai', text: 'Sorry, I encountered an error.' }]);
+      setMessages(prev => [...prev, { role: 'ai', text: 'Sorry, I encountered an error while processing your request.' }]);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex h-screen bg-[#212121] text-gray-200 font-sans relative overflow-hidden">
+    <div className="flex h-screen bg-[#030014] text-gray-200 font-sans relative overflow-hidden selection:bg-indigo-500/30">
       
+      {/* Global Background Ambient Glows */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-600/20 rounded-full blur-[120px] pointer-events-none z-0"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-purple-600/20 rounded-full blur-[120px] pointer-events-none z-0"></div>
+
       {/* MOBILE HEADER */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-[#171717] border-b border-gray-800 flex items-center px-4 z-40">
-        <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 -ml-2 text-gray-300">
-          <Menu className="w-6 h-6" />
-        </button>
-        <div className="flex items-center gap-2 ml-2">
-          <Bot className="text-blue-500 w-5 h-5" />
-          <h1 className="text-md font-semibold text-white">AI Research</h1>
+      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#030014]/80 backdrop-blur-xl border-b border-white/10 flex items-center justify-between px-4 z-40">
+        <div className="flex items-center gap-2">
+          <div className="bg-gradient-to-tr from-indigo-500 to-purple-500 p-1.5 rounded-lg">
+            <Bot className="text-white w-5 h-5" />
+          </div>
+          <h1 className="text-lg font-bold text-white tracking-tight">Nexus AI</h1>
         </div>
+        <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 text-gray-300 hover:text-white bg-white/5 rounded-lg border border-white/10">
+          <Menu className="w-5 h-5" />
+        </button>
       </div>
 
       {/* SIDEBAR */}
       <div className={`
-        fixed md:static inset-y-0 left-0 z-50 w-[260px] bg-[#171717] flex flex-col border-r border-gray-800 transition-transform duration-300
+        fixed md:static inset-y-0 left-0 z-50 w-[280px] bg-[#030014]/95 md:bg-[#030014]/40 backdrop-blur-2xl border-r border-white/10 flex flex-col transition-transform duration-300 ease-in-out
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
-        <div className="p-4 flex items-center justify-between md:justify-start gap-2">
-          <div className="flex items-center gap-2">
-            <Bot className="text-blue-500 w-6 h-6" />
-            <h1 className="text-lg font-semibold text-white tracking-wide">AI Research</h1>
+        <div className="p-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-gradient-to-tr from-indigo-500 to-purple-500 p-2 rounded-xl shadow-lg shadow-indigo-500/20">
+              <Bot className="text-white w-6 h-6" />
+            </div>
+            <h1 className="text-xl font-bold text-white tracking-tight">Nexus AI</h1>
           </div>
-          <button onClick={() => setIsMobileMenuOpen(false)} className="md:hidden text-gray-400">
+          <button onClick={() => setIsMobileMenuOpen(false)} className="md:hidden text-gray-400 hover:text-white">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-3">
-          <label className={`w-full flex items-center justify-center gap-2 bg-[#212121] hover:bg-[#2f2f2f] border border-gray-700 text-white py-2.5 px-4 rounded-lg transition-all cursor-pointer text-sm font-medium ${isUploading ? 'opacity-50' : ''}`}>
-            {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
-            {isUploading ? 'Uploading...' : 'Upload Document'}
+        <div className="px-4 mb-6">
+          <label className={`group relative w-full flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 px-4 rounded-xl transition-all cursor-pointer text-sm font-medium shadow-sm ${isUploading ? 'opacity-50' : ''}`}>
+            {isUploading ? <Loader2 className="w-5 h-5 animate-spin text-indigo-400" /> : <Paperclip className="w-5 h-5 text-indigo-400 group-hover:scale-110 transition-transform" />}
+            {isUploading ? 'Analyzing...' : 'Upload Document'}
             <input type="file" accept=".pdf" className="hidden" onChange={handleFileUpload} disabled={isUploading} />
           </label>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-3 py-2">
-          <h2 className="text-xs font-semibold text-gray-500 mb-2 px-2 uppercase tracking-wider">Uploaded Files</h2>
-          {uploadedFiles.length === 0 && <p className="text-sm text-gray-600 px-2 italic">No files yet.</p>}
+        <div className="flex-1 overflow-y-auto px-4 space-y-2">
+          <h2 className="text-xs font-bold text-gray-500 mb-3 px-2 uppercase tracking-widest flex items-center gap-2">
+            <Sparkles className="w-3 h-3" /> Your Sources
+          </h2>
+          {uploadedFiles.length === 0 && <p className="text-sm text-gray-600 px-2 italic">No documents uploaded yet.</p>}
           {uploadedFiles.map((file, idx) => (
-            <div key={idx} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-[#2f2f2f] cursor-pointer transition-colors group">
-              <FileText className="w-4 h-4 text-gray-400 group-hover:text-white" />
-              <span className="text-sm text-gray-300 group-hover:text-white truncate">{file}</span>
+            <div key={idx} className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:border-indigo-500/30 hover:bg-white/10 cursor-pointer transition-all group">
+              <FileText className="w-4 h-4 text-gray-400 group-hover:text-indigo-400 transition-colors" />
+              <span className="text-sm text-gray-300 group-hover:text-white truncate flex-1">{file}</span>
+              <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-all" />
             </div>
           ))}
         </div>
 
-        <div className="p-4 border-t border-gray-800 bg-[#171717]">
+        <div className="p-4 mt-auto">
           <button 
             onClick={() => { setIsAboutOpen(true); setIsMobileMenuOpen(false); }}
-            className="w-full flex items-center justify-center gap-2 bg-[#212121] hover:bg-[#2f2f2f] border border-gray-700 text-white py-2.5 px-4 rounded-lg transition-all text-sm font-medium"
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 hover:from-indigo-500/20 hover:to-purple-500/20 border border-indigo-500/20 text-white py-3 px-4 rounded-xl transition-all text-sm font-medium"
           >
-            <User className="w-4 h-4 text-blue-500" />
+            <User className="w-4 h-4 text-indigo-400" />
             About Developer
           </button>
         </div>
       </div>
 
       {/* MAIN CHAT AREA */}
-      <div className="flex-1 flex flex-col relative z-10 pt-14 md:pt-0">
+      <div className="flex-1 flex flex-col relative z-10 pt-16 md:pt-0 overflow-hidden">
         
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <div className="max-w-3xl mx-auto space-y-6">
+        {/* 🌟 NAYA: Continuous Moving Background Blobs (Sirf Chat Area ke liye) */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+          <div className="absolute top-[10%] left-[20%] w-72 h-72 bg-indigo-500/15 rounded-full blur-[80px] animate-blob"></div>
+          <div className="absolute bottom-[20%] right-[10%] w-96 h-96 bg-purple-500/15 rounded-full blur-[100px] animate-blob" style={{ animationDelay: '-5s' }}></div>
+          <div className="absolute top-[40%] left-[50%] w-64 h-64 bg-blue-500/15 rounded-full blur-[60px] animate-blob" style={{ animationDelay: '-10s' }}></div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8 relative z-10">
+          <div className="max-w-4xl mx-auto space-y-8">
             {messages.map((msg, index) => (
-              <div key={index} className={`flex gap-2 sm:gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1 ${msg.role === 'user' ? 'bg-gray-600' : 'bg-blue-600'}`}>
-                  {msg.role === 'user' ? <User className="w-5 h-5 text-white" /> : <Bot className="w-5 h-5 text-white" />}
-                </div>
-                <div className={`px-4 py-3 rounded-2xl max-w-[85%] text-[15px] ${
+              <div key={index} className={`flex gap-4 sm:gap-6 animate-fade-in ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                
+                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-lg ${
                   msg.role === 'user' 
-                    ? 'bg-[#2f2f2f] text-white rounded-tr-sm' 
-                    : 'text-gray-200'
+                    ? 'bg-white/10 border border-white/10' 
+                    : 'bg-gradient-to-tr from-indigo-500 to-purple-500 shadow-indigo-500/20'
+                }`}>
+                  {msg.role === 'user' ? <User className="w-5 h-5 text-gray-300" /> : <Bot className="w-5 h-5 text-white" />}
+                </div>
+
+                <div className={`px-5 py-4 rounded-2xl max-w-[85%] text-[15px] sm:text-base leading-relaxed shadow-sm ${
+                  msg.role === 'user' 
+                    ? 'bg-indigo-600 text-white rounded-tr-sm' 
+                    : 'bg-white/5 border border-white/10 text-gray-200 rounded-tl-sm backdrop-blur-sm'
                 }`}>
                   {msg.role === 'ai' ? (
                     <ReactMarkdown 
                       remarkPlugins={[remarkGfm]}
                       components={{
-                        h1: (props) => <h1 className="text-xl sm:text-2xl font-bold text-white mt-4 sm:mt-6 mb-2 sm:mb-3 border-b border-gray-700 pb-2" {...props} />,
-                        h2: (props) => <h2 className="text-lg sm:text-xl font-bold text-white mt-4 sm:mt-5 mb-2 sm:mb-3" {...props} />,
-                        h3: (props) => <h3 className="text-md sm:text-lg font-semibold text-blue-400 mt-3 sm:mt-5 mb-2" {...props} />,
-                        p: (props) => <p className="mb-3 sm:mb-4 leading-relaxed text-gray-300" {...props} />,
-                        ul: (props) => <ul className="list-disc pl-4 sm:pl-6 mb-4 sm:mb-5 space-y-1 sm:space-y-2 text-gray-300" {...props} />,
-                        ol: (props) => <ol className="list-decimal pl-4 sm:pl-6 mb-4 sm:mb-5 space-y-1 sm:space-y-2 text-gray-300" {...props} />,
-                        li: (props) => <li className="pl-1 leading-relaxed" {...props} />,
+                        h1: (props) => <h1 className="text-xl sm:text-2xl font-bold text-white mt-6 mb-4 pb-2 border-b border-white/10" {...props} />,
+                        h2: (props) => <h2 className="text-lg sm:text-xl font-bold text-white mt-5 mb-3" {...props} />,
+                        h3: (props) => <h3 className="text-md sm:text-lg font-semibold text-indigo-400 mt-4 mb-2" {...props} />,
+                        p: (props) => <p className="mb-4 leading-relaxed" {...props} />,
+                        ul: (props) => <ul className="list-disc pl-5 mb-4 space-y-2" {...props} />,
+                        ol: (props) => <ol className="list-decimal pl-5 mb-4 space-y-2" {...props} />,
+                        li: (props) => <li className="pl-1" {...props} />,
                         strong: (props) => <strong className="font-bold text-white" {...props} />,
-                        blockquote: (props) => <blockquote className="border-l-4 border-blue-500 pl-3 sm:pl-4 italic text-gray-400 my-3 sm:my-4" {...props} />,
+                        blockquote: (props) => <blockquote className="border-l-4 border-indigo-500 pl-4 italic text-gray-400 my-4 bg-white/5 py-2 rounded-r-lg" {...props} />,
                       }}
                     >
                       {msg.text}
@@ -199,97 +223,96 @@ function App() {
                 </div>
               </div>
             ))}
+
             {isLoading && messages[messages.length - 1].role !== 'ai' && (
-              <div className="flex gap-2 sm:gap-4">
-                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center shrink-0 mt-1">
+              <div className="flex gap-4 sm:gap-6 animate-fade-in">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/20">
                   <Bot className="w-5 h-5 text-white" />
                 </div>
-                <div className="text-gray-400 flex items-center gap-2 text-sm mt-2">
-                  <Loader2 className="w-4 h-4 animate-spin" /> Thinking...
+                <div className="px-5 py-4 rounded-2xl bg-white/5 border border-white/10 rounded-tl-sm flex items-center gap-3">
+                  <Loader2 className="w-5 h-5 animate-spin text-indigo-400" />
+                  <span className="text-gray-400 font-medium">Analyzing data...</span>
                 </div>
               </div>
             )}
-            <div ref={messagesEndRef} />
+            <div ref={messagesEndRef} className="h-4" />
           </div>
         </div>
 
         {/* Input Area */}
-        <div className="bg-[#212121] border-t border-gray-800 p-3 sm:p-4">
-          <div className="max-w-3xl mx-auto">
-            <form onSubmit={handleSendMessage} className="relative flex items-center bg-[#2f2f2f] rounded-2xl shadow-lg border border-gray-700 focus-within:border-gray-500 transition-all">
+        <div className="p-4 sm:p-6 bg-gradient-to-t from-[#030014] via-[#030014]/80 to-transparent relative z-10">
+          <div className="max-w-4xl mx-auto">
+            <form onSubmit={handleSendMessage} className="relative flex items-center bg-white/5 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 focus-within:border-indigo-500/50 focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all overflow-hidden">
               <input 
                 type="text" 
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Message AI Research Assistant..." 
-                className="w-full bg-transparent text-white py-3 sm:py-4 pl-4 sm:pl-5 pr-14 sm:pr-16 focus:outline-none placeholder-gray-400 text-sm sm:text-base"
+                placeholder="Ask anything about your documents..." 
+                className="w-full bg-transparent text-white py-4 pl-5 pr-16 focus:outline-none placeholder-gray-500 text-sm sm:text-base"
                 disabled={isLoading}
               />
               <button 
                 type="submit" 
                 disabled={isLoading || !input.trim()}
-                className="absolute right-2 sm:right-3 p-2 bg-blue-600 hover:bg-blue-700 disabled:bg-[#3f3f3f] disabled:text-gray-500 rounded-xl text-white transition-all"
+                className="absolute right-3 p-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-white/5 disabled:text-gray-600 rounded-xl text-white transition-all shadow-lg hover:shadow-indigo-500/25 active:scale-95"
               >
-                <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+                <Send className="w-5 h-5" />
               </button>
             </form>
-            <p className="text-center text-[10px] sm:text-xs text-gray-500 mt-2 sm:mt-3">
-              AI can make mistakes. Consider verifying important information.
+            <p className="text-center text-xs text-gray-500 mt-3 font-medium">
+              Nexus AI can make mistakes. Consider verifying important information.
             </p>
           </div>
         </div>
-
       </div>
 
       {/* PREMIUM ABOUT MODAL */}
       {isAboutOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-[60] p-4 transition-all">
-          <div className="bg-[#1e1e1e]/90 border border-gray-700/50 rounded-3xl p-5 sm:p-6 max-w-sm w-full relative shadow-[0_0_50px_-12px_rgba(37,99,235,0.3)]">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4 transition-all animate-fade-in">
+          <div className="bg-[#0a0a0a] border border-white/10 rounded-3xl p-8 max-w-sm w-full relative shadow-[0_0_80px_-20px_rgba(99,102,241,0.5)]">
             
             <button 
               onClick={() => setIsAboutOpen(false)}
-              className="absolute top-3 sm:top-4 right-3 sm:right-4 text-gray-400 hover:text-white bg-gray-800/50 hover:bg-gray-700 p-2 rounded-full transition-all"
+              className="absolute top-5 right-5 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-full transition-all"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
 
             <div className="flex flex-col items-center text-center mt-2">
               
-              <div className="relative mb-4">
-                <div className="absolute inset-0 bg-gradient-to-tr from-blue-600 to-purple-600 rounded-full blur-md opacity-50"></div>
+              <div className="relative mb-6">
+                <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-full blur-xl opacity-60 animate-pulse"></div>
                 <img 
                   src="/profile.jpg" 
                   alt="Aryan" 
-                  className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover border-4 border-[#1e1e1e] shadow-xl"
+                  className="relative w-32 h-32 rounded-full object-cover border-4 border-[#0a0a0a] shadow-2xl"
                   onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-                    e.currentTarget.src = "https://ui-avatars.com/api/?name=Aryan&background=2563eb&color=fff&size=150&font-size=0.4";
+                    e.currentTarget.src = "https://ui-avatars.com/api/?name=Aryan&background=6366f1&color=fff&size=150&font-size=0.4";
                   }}
                 />
               </div>
               
-              <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Aryan</h2>
-              <div className="inline-block bg-blue-500/10 text-blue-400 text-xs font-semibold px-3 py-1 rounded-full mt-2 mb-4 sm:mb-5 border border-blue-500/20">
+              <h2 className="text-2xl font-bold text-white tracking-tight">Aryan</h2>
+              <div className="inline-block bg-indigo-500/10 text-indigo-400 text-xs font-bold px-4 py-1.5 rounded-full mt-3 mb-6 border border-indigo-500/20 uppercase tracking-wide">
                 Full-Stack AI Developer
               </div>
               
-              <p className="text-gray-400 text-xs sm:text-sm leading-relaxed px-2 mb-4 sm:mb-6">
-                I built this Multi-Input AI Research Assistant to demonstrate advanced <span className="text-gray-200 font-medium">RAG (Retrieval-Augmented Generation)</span> architecture. It features a high-performance FastAPI backend, cloud vector search with Neon DB, and an elegant React interface.
+              <p className="text-gray-400 text-sm leading-relaxed px-2 mb-8">
+                Creator of Nexus AI. I specialize in building intelligent web applications using <span className="text-gray-200 font-semibold">RAG Architecture, FastAPI, React, and Cloud AI services.</span> This project demonstrates production-ready AI integration.
               </p>
 
-              <div className="flex gap-2 sm:gap-3 w-full">
-                <a href="https://github.com/aryannn1" target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center gap-2 bg-[#2a2a2a] hover:bg-[#333] border border-gray-700/50 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm text-gray-200 transition-all hover:-translate-y-0.5">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 sm:w-4 sm:h-4"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg> GitHub
+              <div className="flex gap-3 w-full">
+                <a href="https://github.com/aryannn1" target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-3 rounded-xl text-sm font-medium text-white transition-all hover:-translate-y-0.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg> GitHub
                 </a>
-                <a href="https://www.linkedin.com/in/aryan-sharma-66424b288" target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center gap-2 bg-[#0077b5]/10 hover:bg-[#0077b5]/20 border border-[#0077b5]/30 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm text-[#0077b5] transition-all hover:-translate-y-0.5">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 sm:w-4 sm:h-4"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg> LinkedIn
+                <a href="https://www.linkedin.com/in/aryan-sharma-66424b288" target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center gap-2 bg-[#0077b5]/10 hover:bg-[#0077b5]/20 border border-[#0077b5]/30 px-4 py-3 rounded-xl text-sm font-medium text-[#0077b5] transition-all hover:-translate-y-0.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg> LinkedIn
                 </a>
               </div>
-
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 }
