@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { auth, googleProvider } from './firebase';
 import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import { Bot, Mail, Lock, LogIn } from 'lucide-react';
+import { Bot, Mail, Lock } from 'lucide-react';
 
 export default function Auth({ onLogin }: { onLogin: () => void }) {
   const [isLogin, setIsLogin] = useState(true);
