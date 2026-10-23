@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, FileText, Bot, User, Loader2, Paperclip, X } from 'lucide-react';
+import { Send, FileText, Bot, User, Loader2, Paperclip, X, Menu } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -17,12 +17,14 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+  
   useEffect(() => { scrollToBottom(); }, [messages]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -44,6 +46,7 @@ function App() {
       
       setUploadedFiles(prev => [...prev, file.name]);
       setMessages(prev => [...prev, { role: 'ai', text: `Document **"${file.name}"** successfully uploaded! You can now ask questions.` }]);
+      setIsMobileMenuOpen(false);
     } catch (error) {
       console.error(error);
       setMessages(prev => [...prev, { role: 'ai', text: `Error uploading file.` }]);
@@ -102,11 +105,30 @@ function App() {
   return (
     <div className="flex h-screen bg-[#212121] text-gray-200 font-sans relative overflow-hidden">
       
+      {/* MOBILE HEADER */}
+      <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-[#171717] border-b border-gray-800 flex items-center px-4 z-40">
+        <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 -ml-2 text-gray-300">
+          <Menu className="w-6 h-6" />
+        </button>
+        <div className="flex items-center gap-2 ml-2">
+          <Bot className="text-blue-500 w-5 h-5" />
+          <h1 className="text-md font-semibold text-white">AI Research</h1>
+        </div>
+      </div>
+
       {/* SIDEBAR */}
-      <div className="w-[260px] bg-[#171717] flex flex-col border-r border-gray-800 transition-all duration-300 z-10">
-        <div className="p-4 flex items-center gap-2">
-          <Bot className="text-blue-500 w-6 h-6" />
-          <h1 className="text-lg font-semibold text-white tracking-wide">AI Research</h1>
+      <div className={`
+        fixed md:static inset-y-0 left-0 z-50 w-[260px] bg-[#171717] flex flex-col border-r border-gray-800 transition-transform duration-300
+        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
+        <div className="p-4 flex items-center justify-between md:justify-start gap-2">
+          <div className="flex items-center gap-2">
+            <Bot className="text-blue-500 w-6 h-6" />
+            <h1 className="text-lg font-semibold text-white tracking-wide">AI Research</h1>
+          </div>
+          <button onClick={() => setIsMobileMenuOpen(false)} className="md:hidden text-gray-400">
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         <div className="p-3">
@@ -128,10 +150,9 @@ function App() {
           ))}
         </div>
 
-        {/* PREMIUM ABOUT BUTTON */}
         <div className="p-4 border-t border-gray-800 bg-[#171717]">
           <button 
-            onClick={() => setIsAboutOpen(true)}
+            onClick={() => { setIsAboutOpen(true); setIsMobileMenuOpen(false); }}
             className="w-full flex items-center justify-center gap-2 bg-[#212121] hover:bg-[#2f2f2f] border border-gray-700 text-white py-2.5 px-4 rounded-lg transition-all text-sm font-medium"
           >
             <User className="w-4 h-4 text-blue-500" />
@@ -141,12 +162,12 @@ function App() {
       </div>
 
       {/* MAIN CHAT AREA */}
-      <div className="flex-1 flex flex-col relative z-10">
+      <div className="flex-1 flex flex-col relative z-10 pt-14 md:pt-0">
         
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           <div className="max-w-3xl mx-auto space-y-6">
             {messages.map((msg, index) => (
-              <div key={index} className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+              <div key={index} className={`flex gap-2 sm:gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1 ${msg.role === 'user' ? 'bg-gray-600' : 'bg-blue-600'}`}>
                   {msg.role === 'user' ? <User className="w-5 h-5 text-white" /> : <Bot className="w-5 h-5 text-white" />}
                 </div>
@@ -159,15 +180,15 @@ function App() {
                     <ReactMarkdown 
                       remarkPlugins={[remarkGfm]}
                       components={{
-                        h1: (props) => <h1 className="text-2xl font-bold text-white mt-6 mb-3 border-b border-gray-700 pb-2" {...props} />,
-                        h2: (props) => <h2 className="text-xl font-bold text-white mt-5 mb-3" {...props} />,
-                        h3: (props) => <h3 className="text-lg font-semibold text-blue-400 mt-5 mb-2" {...props} />,
-                        p: (props) => <p className="mb-4 leading-relaxed text-gray-300" {...props} />,
-                        ul: (props) => <ul className="list-disc pl-6 mb-5 space-y-2 text-gray-300" {...props} />,
-                        ol: (props) => <ol className="list-decimal pl-6 mb-5 space-y-2 text-gray-300" {...props} />,
+                        h1: (props) => <h1 className="text-xl sm:text-2xl font-bold text-white mt-4 sm:mt-6 mb-2 sm:mb-3 border-b border-gray-700 pb-2" {...props} />,
+                        h2: (props) => <h2 className="text-lg sm:text-xl font-bold text-white mt-4 sm:mt-5 mb-2 sm:mb-3" {...props} />,
+                        h3: (props) => <h3 className="text-md sm:text-lg font-semibold text-blue-400 mt-3 sm:mt-5 mb-2" {...props} />,
+                        p: (props) => <p className="mb-3 sm:mb-4 leading-relaxed text-gray-300" {...props} />,
+                        ul: (props) => <ul className="list-disc pl-4 sm:pl-6 mb-4 sm:mb-5 space-y-1 sm:space-y-2 text-gray-300" {...props} />,
+                        ol: (props) => <ol className="list-decimal pl-4 sm:pl-6 mb-4 sm:mb-5 space-y-1 sm:space-y-2 text-gray-300" {...props} />,
                         li: (props) => <li className="pl-1 leading-relaxed" {...props} />,
                         strong: (props) => <strong className="font-bold text-white" {...props} />,
-                        blockquote: (props) => <blockquote className="border-l-4 border-blue-500 pl-4 italic text-gray-400 my-4" {...props} />,
+                        blockquote: (props) => <blockquote className="border-l-4 border-blue-500 pl-3 sm:pl-4 italic text-gray-400 my-3 sm:my-4" {...props} />,
                       }}
                     >
                       {msg.text}
@@ -179,7 +200,7 @@ function App() {
               </div>
             ))}
             {isLoading && messages[messages.length - 1].role !== 'ai' && (
-              <div className="flex gap-4">
+              <div className="flex gap-2 sm:gap-4">
                 <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center shrink-0 mt-1">
                   <Bot className="w-5 h-5 text-white" />
                 </div>
@@ -193,7 +214,7 @@ function App() {
         </div>
 
         {/* Input Area */}
-        <div className="bg-[#212121] border-t border-gray-800 p-4">
+        <div className="bg-[#212121] border-t border-gray-800 p-3 sm:p-4">
           <div className="max-w-3xl mx-auto">
             <form onSubmit={handleSendMessage} className="relative flex items-center bg-[#2f2f2f] rounded-2xl shadow-lg border border-gray-700 focus-within:border-gray-500 transition-all">
               <input 
@@ -201,18 +222,18 @@ function App() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Message AI Research Assistant..." 
-                className="w-full bg-transparent text-white py-4 pl-5 pr-16 focus:outline-none placeholder-gray-400"
+                className="w-full bg-transparent text-white py-3 sm:py-4 pl-4 sm:pl-5 pr-14 sm:pr-16 focus:outline-none placeholder-gray-400 text-sm sm:text-base"
                 disabled={isLoading}
               />
               <button 
                 type="submit" 
                 disabled={isLoading || !input.trim()}
-                className="absolute right-3 p-2 bg-blue-600 hover:bg-blue-700 disabled:bg-[#3f3f3f] disabled:text-gray-500 rounded-xl text-white transition-all"
+                className="absolute right-2 sm:right-3 p-2 bg-blue-600 hover:bg-blue-700 disabled:bg-[#3f3f3f] disabled:text-gray-500 rounded-xl text-white transition-all"
               >
-                <Send className="w-5 h-5" />
+                <Send className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </form>
-            <p className="text-center text-xs text-gray-500 mt-3">
+            <p className="text-center text-[10px] sm:text-xs text-gray-500 mt-2 sm:mt-3">
               AI can make mistakes. Consider verifying important information.
             </p>
           </div>
@@ -222,12 +243,12 @@ function App() {
 
       {/* PREMIUM ABOUT MODAL */}
       {isAboutOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all">
-          <div className="bg-[#1e1e1e]/90 border border-gray-700/50 rounded-3xl p-6 max-w-sm w-full relative shadow-[0_0_50px_-12px_rgba(37,99,235,0.3)]">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-[60] p-4 transition-all">
+          <div className="bg-[#1e1e1e]/90 border border-gray-700/50 rounded-3xl p-5 sm:p-6 max-w-sm w-full relative shadow-[0_0_50px_-12px_rgba(37,99,235,0.3)]">
             
             <button 
               onClick={() => setIsAboutOpen(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-white bg-gray-800/50 hover:bg-gray-700 p-2 rounded-full transition-all"
+              className="absolute top-3 sm:top-4 right-3 sm:right-4 text-gray-400 hover:text-white bg-gray-800/50 hover:bg-gray-700 p-2 rounded-full transition-all"
             >
               <X className="w-4 h-4" />
             </button>
@@ -239,28 +260,28 @@ function App() {
                 <img 
                   src="/profile.jpg" 
                   alt="Aryan" 
-                  className="relative w-28 h-28 rounded-full object-cover border-4 border-[#1e1e1e] shadow-xl"
+                  className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover border-4 border-[#1e1e1e] shadow-xl"
                   onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
                     e.currentTarget.src = "https://ui-avatars.com/api/?name=Aryan&background=2563eb&color=fff&size=150&font-size=0.4";
                   }}
                 />
               </div>
               
-              <h2 className="text-2xl font-bold text-white tracking-tight">Aryan</h2>
-              <div className="inline-block bg-blue-500/10 text-blue-400 text-xs font-semibold px-3 py-1 rounded-full mt-2 mb-5 border border-blue-500/20">
+              <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Aryan</h2>
+              <div className="inline-block bg-blue-500/10 text-blue-400 text-xs font-semibold px-3 py-1 rounded-full mt-2 mb-4 sm:mb-5 border border-blue-500/20">
                 Full-Stack AI Developer
               </div>
               
-              <p className="text-gray-400 text-sm leading-relaxed px-2 mb-6">
+              <p className="text-gray-400 text-xs sm:text-sm leading-relaxed px-2 mb-4 sm:mb-6">
                 I built this Multi-Input AI Research Assistant to demonstrate advanced <span className="text-gray-200 font-medium">RAG (Retrieval-Augmented Generation)</span> architecture. It features a high-performance FastAPI backend, cloud vector search with Neon DB, and an elegant React interface.
               </p>
 
-              <div className="flex gap-3 w-full">
-                <a href="https://github.com/aryannn1" target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center gap-2 bg-[#2a2a2a] hover:bg-[#333] border border-gray-700/50 px-4 py-2.5 rounded-xl text-sm text-gray-200 transition-all hover:-translate-y-0.5">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg> GitHub
+              <div className="flex gap-2 sm:gap-3 w-full">
+                <a href="https://github.com/aryannn1" target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center gap-2 bg-[#2a2a2a] hover:bg-[#333] border border-gray-700/50 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm text-gray-200 transition-all hover:-translate-y-0.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 sm:w-4 sm:h-4"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg> GitHub
                 </a>
-                <a href="https://www.linkedin.com/in/aryan-sharma-66424b288" target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center gap-2 bg-[#0077b5]/10 hover:bg-[#0077b5]/20 border border-[#0077b5]/30 px-4 py-2.5 rounded-xl text-sm text-[#0077b5] transition-all hover:-translate-y-0.5">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg> LinkedIn
+                <a href="https://www.linkedin.com/in/aryan-sharma-66424b288" target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center gap-2 bg-[#0077b5]/10 hover:bg-[#0077b5]/20 border border-[#0077b5]/30 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm text-[#0077b5] transition-all hover:-translate-y-0.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 sm:w-4 sm:h-4"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg> LinkedIn
                 </a>
               </div>
 
