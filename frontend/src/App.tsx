@@ -86,13 +86,24 @@ function App() {
     }
   };
 
+  // 🔥 NAYA: Logout Function (Chat Clear ke liye)
+  const handleLogout = async () => {
+    await signOut(auth);
+    // Saara local data reset karo
+    setMessages([{ role: 'ai', text: '### Welcome to AI Research Assistant ✨\n\nI am your intelligent research companion. Upload a PDF document to extract insights, or simply ask me anything from general knowledge to complex coding queries.' }]);
+    setUploadedFiles([]);
+    setInput('');
+    setIsAboutOpen(false);
+    setIsMobileMenuOpen(false);
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
     setIsUploading(true);
     const formData = new FormData();
-    formData.append('user_id', user.uid); // Firebase UID
+    formData.append('user_id', user.uid); 
     formData.append('file', file);
 
     try {
@@ -125,7 +136,7 @@ function App() {
     setIsLoading(true);
 
     const formData = new FormData();
-    formData.append('user_id', user.uid); // Firebase UID
+    formData.append('user_id', user.uid); 
     formData.append('question', userMessage);
 
     try {
@@ -248,8 +259,8 @@ function App() {
         </div>
 
         <div className="p-4 mt-auto space-y-2">
-          {/* Logout Button */}
-          <button onClick={() => signOut(auth)} className="w-full flex items-center justify-center gap-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 py-3 px-4 rounded-xl transition-all text-sm font-medium">
+          {/* 🔥 NAYA: Logout Button update kiya gaya hai */}
+          <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 py-3 px-4 rounded-xl transition-all text-sm font-medium">
             <LogOut className="w-4 h-4" /> Logout
           </button>
 
