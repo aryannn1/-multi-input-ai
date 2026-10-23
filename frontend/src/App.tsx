@@ -29,7 +29,7 @@ function App() {
     formData.append('file', file);
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/upload', {
+      const response = await fetch('https://ai-research-backend-hqh1.onrender.com/upload', {
         method: 'POST',
         body: formData,
       });
@@ -59,7 +59,7 @@ function App() {
     formData.append('question', userMessage);
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/chat', {
+      const response = await fetch('https://ai-research-backend-hqh1.onrender.com/chat', {
         method: 'POST',
         body: formData,
       });
