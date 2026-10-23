@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, FileText, Bot, User, Loader2, Paperclip, X, Menu, Sparkles, ChevronRight } from 'lucide-react';
+import { Send, FileText, Bot, User, Loader2, Paperclip, X, Menu, Sparkles, ChevronRight, Mic, MicOff } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -19,6 +19,10 @@ function App() {
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
+  // Voice Input States
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -26,6 +30,48 @@ function App() {
   };
   
   useEffect(() => { scrollToBottom(); }, [messages]);
+
+  // Voice Input Logic
+  useEffect(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = true;
+
+      recognitionRef.current.onresult = (event: any) => {
+        const transcript = Array.from(event.results)
+          .map((result: any) => result[0].transcript)
+          .join('');
+        setInput(transcript);
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current.onerror = (event: any) => {
+        console.error("Speech recognition error", event.error);
+        setIsListening(false);
+      };
+    }
+  }, []);
+
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+    } else {
+      if (!recognitionRef.current) {
+        alert("Your browser does not support voice input. Please use Chrome or Edge.");
+        return;
+      }
+      setInput(''); 
+      recognitionRef.current?.start();
+      setIsListening(true);
+    }
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -105,7 +151,6 @@ function App() {
   return (
     <div className="flex h-screen bg-[#030014] text-gray-200 font-sans relative overflow-hidden selection:bg-indigo-500/30">
       
-      {/* Global Background Ambient Glows */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-600/20 rounded-full blur-[120px] pointer-events-none z-0"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-purple-600/20 rounded-full blur-[120px] pointer-events-none z-0"></div>
 
@@ -175,7 +220,6 @@ function App() {
       {/* MAIN CHAT AREA */}
       <div className="flex-1 flex flex-col relative z-10 pt-16 md:pt-0 overflow-hidden">
         
-        {/* 🌟 NAYA: Continuous Moving Background Blobs (Sirf Chat Area ke liye) */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
           <div className="absolute top-[10%] left-[20%] w-72 h-72 bg-indigo-500/15 rounded-full blur-[80px] animate-blob"></div>
           <div className="absolute bottom-[20%] right-[10%] w-96 h-96 bg-purple-500/15 rounded-full blur-[100px] animate-blob" style={{ animationDelay: '-5s' }}></div>
@@ -243,14 +287,26 @@ function App() {
         <div className="p-4 sm:p-6 bg-gradient-to-t from-[#030014] via-[#030014]/80 to-transparent relative z-10">
           <div className="max-w-4xl mx-auto">
             <form onSubmit={handleSendMessage} className="relative flex items-center bg-white/5 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 focus-within:border-indigo-500/50 focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all overflow-hidden">
+              
+              {/* NAYA: Microphone Button */}
+              <button 
+                type="button"
+                onClick={toggleListening}
+                className={`p-3 ml-2 rounded-xl transition-all ${isListening ? 'bg-red-500/20 text-red-500 animate-pulse' : 'text-gray-400 hover:text-indigo-400 hover:bg-white/10'}`}
+                title={isListening ? "Stop Listening" : "Speak"}
+              >
+                {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+              </button>
+
               <input 
                 type="text" 
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask anything about your documents..." 
-                className="w-full bg-transparent text-white py-4 pl-5 pr-16 focus:outline-none placeholder-gray-500 text-sm sm:text-base"
+                placeholder={isListening ? "Listening..." : "Ask anything about your documents..."} 
+                className="w-full bg-transparent text-white py-4 px-2 pr-16 focus:outline-none placeholder-gray-500 text-sm sm:text-base"
                 disabled={isLoading}
               />
+              
               <button 
                 type="submit" 
                 disabled={isLoading || !input.trim()}
