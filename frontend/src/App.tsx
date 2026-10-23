@@ -1,20 +1,26 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, FileText, Bot, User, Loader2, Paperclip } from 'lucide-react';
+import { Send, FileText, Bot, User, Loader2, Paperclip, Github, Linkedin, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+// TypeScript ke liye Message ka type define kiya
+type Message = {
+  role: 'user' | 'ai';
+  text: string;
+};
+
 function App() {
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState([
+  const [messages, setMessages] = useState<Message[]>([
     { role: 'ai', text: 'Hello! I am your AI Research Assistant. Upload a PDF and ask me anything about it, or just ask a general question.' }
   ]);
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
+  const [isAboutOpen, setIsAboutOpen] = useState(false); // ABOUT MODAL STATE
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -40,6 +46,7 @@ function App() {
       setUploadedFiles(prev => [...prev, file.name]);
       setMessages(prev => [...prev, { role: 'ai', text: `Document **"${file.name}"** successfully uploaded! You can now ask questions.` }]);
     } catch (error) {
+      console.error(error);
       setMessages(prev => [...prev, { role: 'ai', text: `Error uploading file.` }]);
     } finally {
       setIsUploading(false);
@@ -69,7 +76,8 @@ function App() {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       
-      let aiMessage = { role: 'ai', text: '' };
+      // TypeScript Fix
+      let aiMessage: Message = { role: 'ai', text: '' };
       setMessages(prev => [...prev, aiMessage]);
 
       while (true) {
@@ -86,6 +94,7 @@ function App() {
         });
       }
     } catch (error) {
+      console.error(error);
       setMessages(prev => [...prev, { role: 'ai', text: 'Sorry, I encountered an error.' }]);
     } finally {
       setIsLoading(false);
@@ -93,10 +102,10 @@ function App() {
   };
 
   return (
-    <div className="flex h-screen bg-[#212121] text-gray-200 font-sans">
+    <div className="flex h-screen bg-[#212121] text-gray-200 font-sans relative overflow-hidden">
       
       {/* SIDEBAR */}
-      <div className="w-[260px] bg-[#171717] flex flex-col border-r border-gray-800 transition-all duration-300">
+      <div className="w-[260px] bg-[#171717] flex flex-col border-r border-gray-800 transition-all duration-300 z-10">
         <div className="p-4 flex items-center gap-2">
           <Bot className="text-blue-500 w-6 h-6" />
           <h1 className="text-lg font-semibold text-white tracking-wide">AI Research</h1>
@@ -120,10 +129,21 @@ function App() {
             </div>
           ))}
         </div>
+
+        {/* PREMIUM ABOUT BUTTON */}
+        <div className="p-4 border-t border-gray-800 bg-[#171717]">
+          <button 
+            onClick={() => setIsAboutOpen(true)}
+            className="w-full flex items-center justify-center gap-2 bg-[#212121] hover:bg-[#2f2f2f] border border-gray-700 text-white py-2.5 px-4 rounded-lg transition-all text-sm font-medium"
+          >
+            <User className="w-4 h-4 text-blue-500" />
+            About Developer
+          </button>
+        </div>
       </div>
 
       {/* MAIN CHAT AREA */}
-      <div className="flex-1 flex flex-col relative">
+      <div className="flex-1 flex flex-col relative z-10">
         
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           <div className="max-w-3xl mx-auto space-y-6">
@@ -141,23 +161,15 @@ function App() {
                     <ReactMarkdown 
                       remarkPlugins={[remarkGfm]}
                       components={{
-                        h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-white mt-6 mb-3 border-b border-gray-700 pb-2" {...props} />,
-                        h2: ({node, ...props}) => <h2 className="text-xl font-bold text-white mt-5 mb-3" {...props} />,
-                        h3: ({node, ...props}) => <h3 className="text-lg font-semibold text-blue-400 mt-5 mb-2" {...props} />,
-                        p: ({node, ...props}) => <p className="mb-4 leading-relaxed text-gray-300" {...props} />,
-                        ul: ({node, ...props}) => <ul className="list-disc pl-6 mb-5 space-y-2 text-gray-300" {...props} />,
-                        ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-5 space-y-2 text-gray-300" {...props} />,
-                        li: ({node, ...props}) => <li className="pl-1 leading-relaxed" {...props} />,
-                        strong: ({node, ...props}) => <strong className="font-bold text-white" {...props} />,
-                        code: ({node, inline, ...props}: any) => 
-                          inline ? (
-                            <code className="bg-gray-800 text-blue-300 px-1.5 py-0.5 rounded text-sm font-mono" {...props} />
-                          ) : (
-                            <pre className="bg-[#1e1e1e] p-4 rounded-lg overflow-x-auto my-4 border border-gray-700">
-                              <code className="text-gray-200 text-sm font-mono" {...props} />
-                            </pre>
-                          ),
-                        blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-blue-500 pl-4 italic text-gray-400 my-4" {...props} />,
+                        h1: (props) => <h1 className="text-2xl font-bold text-white mt-6 mb-3 border-b border-gray-700 pb-2" {...props} />,
+                        h2: (props) => <h2 className="text-xl font-bold text-white mt-5 mb-3" {...props} />,
+                        h3: (props) => <h3 className="text-lg font-semibold text-blue-400 mt-5 mb-2" {...props} />,
+                        p: (props) => <p className="mb-4 leading-relaxed text-gray-300" {...props} />,
+                        ul: (props) => <ul className="list-disc pl-6 mb-5 space-y-2 text-gray-300" {...props} />,
+                        ol: (props) => <ol className="list-decimal pl-6 mb-5 space-y-2 text-gray-300" {...props} />,
+                        li: (props) => <li className="pl-1 leading-relaxed" {...props} />,
+                        strong: (props) => <strong className="font-bold text-white" {...props} />,
+                        blockquote: (props) => <blockquote className="border-l-4 border-blue-500 pl-4 italic text-gray-400 my-4" {...props} />,
                       }}
                     >
                       {msg.text}
@@ -209,6 +221,61 @@ function App() {
         </div>
 
       </div>
+
+      {/* PREMIUM ABOUT MODAL */}
+      {isAboutOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all">
+          <div className="bg-[#1e1e1e]/90 border border-gray-700/50 rounded-3xl p-6 max-w-sm w-full relative shadow-[0_0_50px_-12px_rgba(37,99,235,0.3)]">
+            
+            <button 
+              onClick={() => setIsAboutOpen(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white bg-gray-800/50 hover:bg-gray-700 p-2 rounded-full transition-all"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="flex flex-col items-center text-center mt-2">
+              
+              {/* Photo with elegant glow */}
+              <div className="relative mb-4">
+                <div className="absolute inset-0 bg-gradient-to-tr from-blue-600 to-purple-600 rounded-full blur-md opacity-50"></div>
+                <img 
+                  src="/profile.jpg" 
+                  alt="Aryan" 
+                  className="relative w-28 h-28 rounded-full object-cover border-4 border-[#1e1e1e] shadow-xl"
+                  onError={(e) => {
+                    // Fallback if image not found
+                    e.currentTarget.src = "https://ui-avatars.com/api/?name=Aryan&background=2563eb&color=fff&size=150&font-size=0.4";
+                  }}
+                />
+              </div>
+              
+              {/* Name and Role */}
+              <h2 className="text-2xl font-bold text-white tracking-tight">Aryan</h2>
+              <div className="inline-block bg-blue-500/10 text-blue-400 text-xs font-semibold px-3 py-1 rounded-full mt-2 mb-5 border border-blue-500/20">
+                Full-Stack AI Developer
+              </div>
+              
+              {/* Project Details */}
+              <p className="text-gray-400 text-sm leading-relaxed px-2 mb-6">
+                I built this Multi-Input AI Research Assistant to demonstrate advanced <span className="text-gray-200 font-medium">RAG (Retrieval-Augmented Generation)</span> architecture. It features a high-performance FastAPI backend, cloud vector search with Neon DB, and an elegant React interface.
+              </p>
+
+              {/* Social Links */}
+              <div className="flex gap-3 w-full">
+                <a href="https://github.com/aryannn1" target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center gap-2 bg-[#2a2a2a] hover:bg-[#333] border border-gray-700/50 px-4 py-2.5 rounded-xl text-sm text-gray-200 transition-all hover:-translate-y-0.5">
+                  <Github className="w-4 h-4" /> GitHub
+                </a>
+                <a href="https://linkedin.com/in/apna-linkedin-profile" target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center gap-2 bg-[#0077b5]/10 hover:bg-[#0077b5]/20 border border-[#0077b5]/30 px-4 py-2.5 rounded-xl text-sm text-[#0077b5] transition-all hover:-translate-y-0.5">
+                  <Linkedin className="w-4 h-4" /> LinkedIn
+                </a>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
