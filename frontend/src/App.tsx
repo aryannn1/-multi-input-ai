@@ -1,7 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, FileText, Bot, User, Loader2, Paperclip, X, Menu, Sparkles, ChevronRight, Mic, MicOff } from 'lucide-react';
+import { Send, FileText, Bot, User, Loader2, Paperclip, X, Menu, Sparkles, ChevronRight, Mic, MicOff, LogOut } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { auth } from './firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import Auth from './Auth';
 
 type Message = {
   role: 'user' | 'ai';
@@ -9,6 +12,9 @@ type Message = {
 };
 
 function App() {
+  const [user, setUser] = useState<any>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([
     { role: 'ai', text: '### Welcome to AI Research Assistant ✨\n\nI am your intelligent research companion. Upload a PDF document to extract insights, or simply ask me anything from general knowledge to complex coding queries.' }
@@ -19,11 +25,18 @@ function App() {
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
-  // Voice Input States
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
-  
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Firebase Auth Check
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setIsAuthLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -75,10 +88,11 @@ function App() {
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !user) return;
 
     setIsUploading(true);
     const formData = new FormData();
+    formData.append('user_id', user.uid); // Firebase UID
     formData.append('file', file);
 
     try {
@@ -103,7 +117,7 @@ function App() {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || !user) return;
 
     const userMessage = input;
     setInput('');
@@ -111,6 +125,7 @@ function App() {
     setIsLoading(true);
 
     const formData = new FormData();
+    formData.append('user_id', user.uid); // Firebase UID
     formData.append('question', userMessage);
 
     try {
@@ -148,6 +163,21 @@ function App() {
     }
   };
 
+  // Loading State
+  if (isAuthLoading) {
+    return (
+      <div className="h-screen bg-[#030014] flex flex-col items-center justify-center text-white">
+        <Loader2 className="w-10 h-10 animate-spin text-indigo-500 mb-4" />
+        <p className="text-lg font-medium tracking-widest">LOADING NEXUS AI...</p>
+      </div>
+    );
+  }
+
+  // Auth Check
+  if (!user) {
+    return <Auth onLogin={() => {}} />;
+  }
+
   return (
     <div className="flex h-screen bg-[#030014] text-gray-200 font-sans relative overflow-hidden selection:bg-indigo-500/30">
       
@@ -184,6 +214,17 @@ function App() {
           </button>
         </div>
 
+        {/* User Info */}
+        <div className="px-6 mb-4 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold">
+            {user.email?.[0].toUpperCase() || 'U'}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-white truncate">{user.displayName || user.email?.split('@')[0]}</p>
+            <p className="text-xs text-gray-500 truncate">{user.email}</p>
+          </div>
+        </div>
+
         <div className="px-4 mb-6">
           <label className={`group relative w-full flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 px-4 rounded-xl transition-all cursor-pointer text-sm font-medium shadow-sm ${isUploading ? 'opacity-50' : ''}`}>
             {isUploading ? <Loader2 className="w-5 h-5 animate-spin text-indigo-400" /> : <Paperclip className="w-5 h-5 text-indigo-400 group-hover:scale-110 transition-transform" />}
@@ -206,13 +247,15 @@ function App() {
           ))}
         </div>
 
-        <div className="p-4 mt-auto">
-          <button 
-            onClick={() => { setIsAboutOpen(true); setIsMobileMenuOpen(false); }}
-            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 hover:from-indigo-500/20 hover:to-purple-500/20 border border-indigo-500/20 text-white py-3 px-4 rounded-xl transition-all text-sm font-medium"
-          >
-            <User className="w-4 h-4 text-indigo-400" />
-            About Developer
+        <div className="p-4 mt-auto space-y-2">
+          {/* Logout Button */}
+          <button onClick={() => signOut(auth)} className="w-full flex items-center justify-center gap-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 py-3 px-4 rounded-xl transition-all text-sm font-medium">
+            <LogOut className="w-4 h-4" /> Logout
+          </button>
+
+          {/* About Button */}
+          <button onClick={() => { setIsAboutOpen(true); setIsMobileMenuOpen(false); }} className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 hover:from-indigo-500/20 hover:to-purple-500/20 border border-indigo-500/20 text-white py-3 px-4 rounded-xl transition-all text-sm font-medium">
+            <User className="w-4 h-4 text-indigo-400" /> About Developer
           </button>
         </div>
       </div>
@@ -288,7 +331,6 @@ function App() {
           <div className="max-w-4xl mx-auto">
             <form onSubmit={handleSendMessage} className="relative flex items-center bg-white/5 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 focus-within:border-indigo-500/50 focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all overflow-hidden">
               
-              {/* NAYA: Microphone Button */}
               <button 
                 type="button"
                 onClick={toggleListening}
