@@ -4,32 +4,42 @@ import gc
 from database import get_db_connection
 from dotenv import load_dotenv
 from google import genai
+from google.genai import types
 from tavily import TavilyClient
 from datetime import datetime
 
 load_dotenv()
 
-# Clients Setup
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 tavily = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
 
 def init_db():
-    """Ye function database table pehle hi bana dega"""
     conn = get_db_connection()
     cursor = conn.cursor()
+    # User ID ke saath doc_chunks table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS doc_chunks (
             id SERIAL PRIMARY KEY,
+            user_id TEXT NOT NULL,
             filename TEXT,
             content TEXT,
             embedding vector(768)
+        );
+    """)
+    # Chat History table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS chat_history (
+            id SERIAL PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            role TEXT NOT NULL,
+            message TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     """)
     conn.commit()
     cursor.close()
     conn.close()
 
-# Server start hote hi table bana do
 init_db()
 
 def extract_text_from_pdf(pdf_path: str):
@@ -51,127 +61,106 @@ def chunk_text(text: str, chunk_size: int = 500):
         chunks.append(" ".join(current_chunk))
     return chunks
 
-from google.genai import types
-
 def get_embedding(text: str):
     try:
         response = client.models.embed_content(
             model="gemini-embedding-001",
             contents=text,
-            config=types.EmbedContentConfig(output_dimensionality=768) # <--- Ye line add karo
+            config=types.EmbedContentConfig(output_dimensionality=768)
         )
         return response.embeddings[0].values
     except Exception as e:
         print(f"Embedding Error: {e}")
-        return [0.0] * 768
+        return None
 
-def process_and_store_pdf(pdf_path: str, filename: str):
+def process_and_store_pdf(pdf_path: str, filename: str, user_id: str):
     try:
-        print(f"1. Starting PDF extraction for: {filename}")
         text = extract_text_from_pdf(pdf_path)
-        
-        print("2. Chunking text...")
         chunks = chunk_text(text)
-        print(f"3. Total chunks created: {len(chunks)}")
-        
         del text
         gc.collect()
         
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Purana data delete karo (agar same file dobara upload ho)
-        cursor.execute("DELETE FROM doc_chunks WHERE filename = %s", (filename,))
+        # SIRF IS USER ka purana data delete karo
+        cursor.execute("DELETE FROM doc_chunks WHERE user_id = %s;", (user_id,))
         
-        print("4. Starting embeddings generation and DB insert...")
         for i, chunk in enumerate(chunks):
             embedding = get_embedding(chunk)
-            cursor.execute(
-                "INSERT INTO doc_chunks (filename, content, embedding) VALUES (%s, %s, %s)",
-                (filename, chunk, embedding)
-            )
-            print(f"   -> Inserted chunk {i+1}/{len(chunks)}")
-            
+            if embedding:
+                cursor.execute(
+                    "INSERT INTO doc_chunks (user_id, filename, content, embedding) VALUES (%s, %s, %s, %s)",
+                    (user_id, filename, chunk, embedding)
+                )
             del embedding
             gc.collect()
             
         conn.commit()
         cursor.close()
         conn.close()
-        print("5. Done! Saved to DB.")
         return len(chunks)
     except Exception as e:
-        print(f"CRITICAL ERROR in process_and_store_pdf: {str(e)}")
+        print(f"Error in process: {e}")
         return 0
 
-def ask_question_stream(question: str):
+def ask_question_stream(question: str, user_id: str):
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
         
+        # User ke sawaal ka vector
         question_embedding = get_embedding(question)
         
-        cursor.execute("""
-            SELECT content FROM doc_chunks 
-            ORDER BY embedding <=> %s::vector 
-            LIMIT 1;
-        """, (question_embedding,))
-        
-        results = cursor.fetchall()
-        cursor.close()
-        conn.close()
-
+        # SIRF IS USER ki PDF se context nikaalo
         context = ""
-        if results:
-            context = results[0][0]
+        if question_embedding:
+            cursor.execute("""
+                SELECT content FROM doc_chunks 
+                WHERE user_id = %s 
+                ORDER BY embedding <=> %s::vector LIMIT 3;
+            """, (user_id, question_embedding,))
+            results = cursor.fetchall()
+            context = "\n\n".join([row[0] for row in results]) if results else ""
 
-        decision_prompt = f"""You are a router. Based on the user's question, decide if you need to search the internet for current information.
-If the question asks about current events, recent news, or specific facts that might have changed (like current presidents, weather), reply with 'SEARCH'.
-If the question is general knowledge, coding, or related to the provided context, reply with 'NO_SEARCH'.
+        # Purani chat history nikaalo
+        cursor.execute("""
+            SELECT role, message FROM chat_history 
+            WHERE user_id = %s ORDER BY created_at DESC LIMIT 6;
+        """, (user_id,))
+        history = cursor.fetchall()[::-1]
+        history_text = "\n".join([f"{r}: {m}" for r, m in history])
 
-Context available: {context if context else "None"}
+        # User ka sawaal save karo
+        cursor.execute("INSERT INTO chat_history (user_id, role, message) VALUES (%s, 'user', %s)", (user_id, question))
+        conn.commit()
 
-Question: {question}
-Decision:"""
+        # Final Prompt
+        final_prompt = f"""You are a helpful personal AI assistant for this specific user. 
+Here is your past conversation with them:
+{history_text if history_text else "No previous history."}
 
-        decision_response = client.models.generate_content(
-            model="gemini-3.5-flash-lite",
-            contents=decision_prompt
-        )
-        decision = decision_response.text.strip().upper()
-
-        search_context = ""
-        if "SEARCH" in decision:
-            print(f"🌐 Web Search triggered for: {question}")
-            search_result = tavily.search(query=question, search_depth="basic", max_results=3)
-            search_context = "\n".join([f"Source: {res['url']}\n{res['content']}" for res in search_result['results']])
-
-        final_prompt = f"""You are an expert AI Research Assistant. Today's date is {datetime.now().strftime("%B %d, %Y")}.
-        
-Context from User's PDF:
-{context if context else "No PDF context."}
-
-Live Web Search Results:
-{search_context if search_context else "No web search performed."}
-
-Instructions for your response:
-1. Structure your answer beautifully.
-2. ALWAYS start with a main heading (e.g., ### Title).
-3. Break down the explanation into small paragraphs and use bullet points (using '- ') for lists.
-4. Use bold text (**like this**) for important keywords.
-5. Keep the language professional, accurate, and easy to read.
+Here is the context from their uploaded document:
+{context if context else "No document uploaded."}
 
 Question: {question}
-Answer:"""
+Answer accurately in English. Format your answer beautifully."""
 
         response = client.models.generate_content_stream(
             model="gemini-3.5-flash-lite",
             contents=final_prompt
         )
         
+        full_response = ""
         for chunk in response:
             if chunk.text:
+                full_response += chunk.text
                 yield chunk.text
                 
+        # AI ka jawab save karo
+        cursor.execute("INSERT INTO chat_history (user_id, role, message) VALUES (%s, 'ai', %s)", (user_id, full_response))
+        conn.commit()
+        cursor.close()
+        conn.close()
     except Exception as e:
         yield f"Error: {str(e)}"
