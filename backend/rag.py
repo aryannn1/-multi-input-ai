@@ -16,7 +16,8 @@ tavily = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
 def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
-    # User ID ke saath doc_chunks table
+    
+    # 1. doc_chunks table banao
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS doc_chunks (
             id SERIAL PRIMARY KEY,
@@ -26,7 +27,8 @@ def init_db():
             embedding vector(768)
         );
     """)
-    # Chat History table
+    
+    # 2. chat_history table banao
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS chat_history (
             id SERIAL PRIMARY KEY,
@@ -36,11 +38,18 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     """)
+
+    # Auto-Migration (Agar purana table hai bina user_id ke, toh column add karo)
+    try:
+        cursor.execute("ALTER TABLE doc_chunks ADD COLUMN IF NOT EXISTS user_id TEXT NOT NULL DEFAULT 'default_user';")
+        cursor.execute("ALTER TABLE chat_history ADD COLUMN IF NOT EXISTS user_id TEXT NOT NULL DEFAULT 'default_user';")
+        print("✅ Database migration checked/updated successfully.")
+    except Exception as e:
+        print(f"ℹ️ Migration note: {e}")
+
     conn.commit()
     cursor.close()
     conn.close()
-
-init_db()
 
 def extract_text_from_pdf(pdf_path: str):
     doc = fitz.open(pdf_path)
