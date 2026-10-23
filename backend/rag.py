@@ -51,16 +51,19 @@ def chunk_text(text: str, chunk_size: int = 500):
         chunks.append(" ".join(current_chunk))
     return chunks
 
+from google.genai import types
+
 def get_embedding(text: str):
     try:
         response = client.models.embed_content(
             model="gemini-embedding-001",
-            contents=text
+            contents=text,
+            config=types.EmbedContentConfig(output_dimensionality=768) # <--- Ye line add karo
         )
         return response.embeddings[0].values
     except Exception as e:
         print(f"Embedding Error: {e}")
-        return [0.0] * 768 
+        return [0.0] * 768
 
 def process_and_store_pdf(pdf_path: str, filename: str):
     try:
